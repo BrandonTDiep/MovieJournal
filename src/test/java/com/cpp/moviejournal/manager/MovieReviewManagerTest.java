@@ -4,6 +4,7 @@ import com.cpp.moviejournal.model.MovieReview;
 import org.junit.jupiter.api.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -168,6 +169,230 @@ class MovieReviewManagerTest {
             // Then
             List<MovieReview> reviews = manager.getAllMovies();
             assertTrue(reviews.isEmpty());
+        }
+    }
+
+    @Nested
+    @DisplayName("Bulk Delete Review Tests")
+    class BulkDeleteReviewTests {
+
+        @BeforeEach
+        void setUpBulkDeleteTests() {
+            manager.addReview(testReview1);
+            manager.addReview(testReview2);
+            manager.addReview(testReview3);
+        }
+
+        @Test
+        @DisplayName("Should delete multiple existing reviews successfully")
+        void shouldDeleteMultipleExistingReviewsSuccessfully() {
+            // Given
+            List<MovieReview> reviewsToDelete = List.of(testReview1, testReview2);
+            
+            // When
+            int deletedCount = manager.deleteReviews(reviewsToDelete);
+            
+            // Then
+            assertEquals(2, deletedCount);
+            List<MovieReview> remainingReviews = manager.getAllMovies();
+            assertEquals(1, remainingReviews.size());
+            assertTrue(remainingReviews.contains(testReview3));
+            assertFalse(remainingReviews.contains(testReview1));
+            assertFalse(remainingReviews.contains(testReview2));
+        }
+
+        @Test
+        @DisplayName("Should delete all reviews when all are selected")
+        void shouldDeleteAllReviewsWhenAllAreSelected() {
+            // Given
+            List<MovieReview> allReviews = List.of(testReview1, testReview2, testReview3);
+            
+            // When
+            int deletedCount = manager.deleteReviews(allReviews);
+            
+            // Then
+            assertEquals(3, deletedCount);
+            List<MovieReview> remainingReviews = manager.getAllMovies();
+            assertTrue(remainingReviews.isEmpty());
+        }
+
+        @Test
+        @DisplayName("Should return zero when deleting empty list")
+        void shouldReturnZeroWhenDeletingEmptyList() {
+            // Given
+            List<MovieReview> emptyList = new ArrayList<>();
+            
+            // When
+            int deletedCount = manager.deleteReviews(emptyList);
+            
+            // Then
+            assertEquals(0, deletedCount);
+            List<MovieReview> remainingReviews = manager.getAllMovies();
+            assertEquals(3, remainingReviews.size());
+        }
+
+        @Test
+        @DisplayName("Should return zero when deleting null list")
+        void shouldReturnZeroWhenDeletingNullList() {
+            // When
+            int deletedCount = manager.deleteReviews(null);
+            
+            // Then
+            assertEquals(0, deletedCount);
+            List<MovieReview> remainingReviews = manager.getAllMovies();
+            assertEquals(3, remainingReviews.size());
+        }
+
+        @Test
+        @DisplayName("Should handle list with null reviews")
+        void shouldHandleListWithNullReviews() {
+            // Given
+            List<MovieReview> listWithNulls = new ArrayList<>();
+            listWithNulls.add(testReview1);
+            listWithNulls.add(null);
+            listWithNulls.add(testReview2);
+            listWithNulls.add(null);
+            
+            // When
+            int deletedCount = manager.deleteReviews(listWithNulls);
+            
+            // Then
+            assertEquals(2, deletedCount);
+            List<MovieReview> remainingReviews = manager.getAllMovies();
+            assertEquals(1, remainingReviews.size());
+            assertTrue(remainingReviews.contains(testReview3));
+        }
+
+        @Test
+        @DisplayName("Should handle list with only null reviews")
+        void shouldHandleListWithOnlyNullReviews() {
+            // Given
+            List<MovieReview> listWithOnlyNulls = new ArrayList<>();
+            listWithOnlyNulls.add(null);
+            listWithOnlyNulls.add(null);
+            listWithOnlyNulls.add(null);
+            
+            // When
+            int deletedCount = manager.deleteReviews(listWithOnlyNulls);
+            
+            // Then
+            assertEquals(0, deletedCount);
+            List<MovieReview> remainingReviews = manager.getAllMovies();
+            assertEquals(3, remainingReviews.size());
+        }
+
+        @Test
+        @DisplayName("Should handle deletion of non-existent reviews")
+        void shouldHandleDeletionOfNonExistentReviews() {
+            // Given
+            MovieReview nonExistent1 = new MovieReview("Non-existent 1", "Director", "Genre", 3.0, "01/01/2000");
+            MovieReview nonExistent2 = new MovieReview("Non-existent 2", "Director", "Genre", 3.0, "01/01/2000");
+            List<MovieReview> nonExistentReviews = List.of(nonExistent1, nonExistent2);
+            
+            // When
+            int deletedCount = manager.deleteReviews(nonExistentReviews);
+            
+            // Then
+            assertEquals(0, deletedCount);
+            List<MovieReview> remainingReviews = manager.getAllMovies();
+            assertEquals(3, remainingReviews.size());
+        }
+
+        @Test
+        @DisplayName("Should handle mixed list of existing and non-existent reviews")
+        void shouldHandleMixedListOfExistingAndNonExistentReviews() {
+            // Given
+            MovieReview nonExistent = new MovieReview("Non-existent", "Director", "Genre", 3.0, "01/01/2000");
+            List<MovieReview> mixedList = List.of(testReview1, nonExistent, testReview2);
+            
+            // When
+            int deletedCount = manager.deleteReviews(mixedList);
+            
+            // Then
+            assertEquals(2, deletedCount);
+            List<MovieReview> remainingReviews = manager.getAllMovies();
+            assertEquals(1, remainingReviews.size());
+            assertTrue(remainingReviews.contains(testReview3));
+        }
+
+        @Test
+        @DisplayName("Should handle duplicate reviews in list")
+        void shouldHandleDuplicateReviewsInList() {
+            // Given
+            List<MovieReview> listWithDuplicates = List.of(testReview1, testReview1, testReview2);
+            
+            // When
+            int deletedCount = manager.deleteReviews(listWithDuplicates);
+            
+            // Then
+            assertEquals(2, deletedCount);
+            List<MovieReview> remainingReviews = manager.getAllMovies();
+            assertEquals(1, remainingReviews.size());
+            assertTrue(remainingReviews.contains(testReview3));
+        }
+
+        @Test
+        @DisplayName("Should delete single review from list")
+        void shouldDeleteSingleReviewFromList() {
+            // Given
+            List<MovieReview> singleReview = List.of(testReview1);
+            
+            // When
+            int deletedCount = manager.deleteReviews(singleReview);
+            
+            // Then
+            assertEquals(1, deletedCount);
+            List<MovieReview> remainingReviews = manager.getAllMovies();
+            assertEquals(2, remainingReviews.size());
+            assertFalse(remainingReviews.contains(testReview1));
+            assertTrue(remainingReviews.contains(testReview2));
+            assertTrue(remainingReviews.contains(testReview3));
+        }
+
+        @Test
+        @DisplayName("Should maintain user scope when deleting reviews")
+        void shouldMaintainUserScopeWhenDeletingReviews() {
+            // Given - Create a manager with a different user ID
+            MovieReviewManager otherUserManager = new MovieReviewManager(2);
+            otherUserManager.addReview(testReview1);
+            otherUserManager.addReview(testReview2);
+            
+            // When - Try to delete reviews from other user using current manager
+            List<MovieReview> reviewsToDelete = List.of(testReview1, testReview2);
+            int deletedCount = manager.deleteReviews(reviewsToDelete);
+            
+            // Then - Should not delete reviews from other user
+            assertEquals(0, deletedCount);
+            List<MovieReview> remainingReviews = manager.getAllMovies();
+            assertEquals(3, remainingReviews.size());
+            
+            // Clean up
+            otherUserManager.clearAllReviews();
+        }
+
+        @Test
+        @DisplayName("Should handle large number of reviews for deletion")
+        void shouldHandleLargeNumberOfReviewsForDeletion() {
+            // Given - Add more reviews
+            List<MovieReview> additionalReviews = new ArrayList<>();
+            for (int i = 4; i <= 10; i++) {
+                MovieReview review = new MovieReview("Movie " + i, "Director " + i, "Genre", 3.0, "01/01/2024");
+                manager.addReview(review);
+                additionalReviews.add(review);
+            }
+            
+            // When - Delete half of them
+            List<MovieReview> reviewsToDelete = new ArrayList<>();
+            reviewsToDelete.add(testReview1);
+            reviewsToDelete.add(testReview2);
+            reviewsToDelete.addAll(additionalReviews.subList(0, 3));
+            
+            int deletedCount = manager.deleteReviews(reviewsToDelete);
+            
+            // Then
+            assertEquals(5, deletedCount);
+            List<MovieReview> remainingReviews = manager.getAllMovies();
+            assertEquals(5, remainingReviews.size()); // 3 original + 7 additional - 5 deleted = 5 remaining
         }
     }
 

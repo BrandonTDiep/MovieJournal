@@ -166,6 +166,64 @@ public class MovieReviewManager {
         }
     }
 
+    /**
+     * Deletes multiple reviews in a single operation
+     * @param reviews List of MovieReview objects to delete
+     * @return Number of reviews successfully deleted
+     */
+    public int deleteReviews(List<MovieReview> reviews) {
+        if (reviews == null || reviews.isEmpty()) {
+            return 0;
+        }
+        
+        // Filter out null reviews and ensure user scope
+        List<MovieReview> validReviews = new ArrayList<>();
+        for (MovieReview review : reviews) {
+            if (review != null) {
+                // Enforce current user scope on the operation
+                if (currentUserId > 0) {
+                    review.setUserId(currentUserId);
+                }
+                validReviews.add(review);
+            }
+        }
+        
+        if (validReviews.isEmpty()) {
+            return 0;
+        }
+        
+        // Build the SQL query with placeholders for all reviews
+        StringBuilder sqlBuilder = new StringBuilder("DELETE FROM movie_reviews WHERE user_id = ? AND id IN (");
+        for (int i = 0; i < validReviews.size(); i++) {
+            if (i > 0) sqlBuilder.append(", ");
+            sqlBuilder.append("?");
+        }
+        sqlBuilder.append(")");
+        
+        String sql = sqlBuilder.toString();
+        int deletedCount = 0;
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            // Set user_id parameter
+            stmt.setInt(1, validReviews.get(0).getUserId());
+            
+            // Set review ID parameters
+            for (int i = 0; i < validReviews.size(); i++) {
+                stmt.setInt(i + 2, validReviews.get(i).getId());
+            }
+            
+            deletedCount = stmt.executeUpdate();
+            
+        } catch (SQLException e) {
+            System.err.println("Error deleting reviews: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return deletedCount;
+    }
+
     public void updateReview(MovieReview original, MovieReview updated) {
         if (original == null || updated == null) return;
         
