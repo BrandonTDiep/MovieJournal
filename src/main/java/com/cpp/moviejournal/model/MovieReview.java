@@ -57,6 +57,68 @@ public class MovieReview {
         this(0, title, director, genre, rating, dateWatched); // userId = 0 for legacy usage
     }
 
+    // Builder pattern for MovieReview
+    public static class Builder {
+        private int id;
+        private int userId;
+        private String title;
+        private String director;
+        private String genre;
+        private double rating;
+        private String review;
+        private LocalDate dateWatched;
+
+        public Builder id(int id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder userId(int userId) {
+            this.userId = userId;
+            return this;
+        }
+
+        public Builder title(String title) {
+            this.title = title;
+            return this;
+        }
+
+        public Builder director(String director) {
+            this.director = director;
+            return this;
+        }
+
+        public Builder genre(String genre) {
+            this.genre = genre;
+            return this;
+        }
+
+        public Builder rating(double rating) {
+            this.rating = rating;
+            return this;
+        }
+
+        public Builder review(String review) {
+            this.review = review;
+            return this;
+        }
+
+        public Builder dateWatched(LocalDate dateWatched) {
+            this.dateWatched = dateWatched;
+            return this;
+        }
+
+        public MovieReview build() {
+            LocalDate date = dateWatched != null ? dateWatched : LocalDate.now();
+            MovieReview mr = new MovieReview(id, userId, title, director, genre, rating, review, date);
+            return mr;
+        }
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
     // Getters and Setters
     public int getId() {
         return id;
