@@ -38,6 +38,69 @@ class MovieReviewManagerTest {
         testReview3.setReview("One of the best superhero movies ever made.");
     }
 
+    @Nested
+    @DisplayName("Listener Notification Tests")
+    class ListenerNotificationTests {
+
+        static class TestListener implements ReviewChangeListener {
+            int added;
+            int updated;
+            int deleted;
+            int bulkDeleted;
+            int cleared;
+
+            @Override
+            public void onReviewAdded(MovieReview review) { added++; }
+
+            @Override
+            public void onReviewUpdated(MovieReview review) { updated++; }
+
+            @Override
+            public void onReviewDeleted(int reviewId) { deleted++; }
+
+            @Override
+            public void onReviewsBulkDeleted(int count) { bulkDeleted += count; }
+
+            @Override
+            public void onReviewsCleared() { cleared++; }
+        }
+
+        @Test
+        @DisplayName("Should notify on add/update/delete/clear/bulk-delete")
+        void shouldNotifyOnAllEvents() {
+            TestListener listener = new TestListener();
+            manager.addReviewChangeListener(listener);
+
+            // add
+            manager.addReview(testReview1);
+            assertEquals(1, listener.added);
+
+            // update
+            MovieReview updated = new MovieReview(testReview1.getTitle(), testReview1.getDirector(), "Updated", 5.0, "01/01/2024");
+            updated.setReview("u");
+            manager.updateReview(testReview1, updated);
+            assertEquals(1, listener.updated);
+
+            // delete single
+            manager.deleteReview(testReview1);
+            assertEquals(1, listener.deleted);
+
+            // add three and bulk delete two
+            manager.addReview(testReview1);
+            manager.addReview(testReview2);
+            manager.addReview(testReview3);
+            int bulk = manager.deleteReviews(List.of(testReview1, testReview2));
+            assertEquals(2, bulk);
+            assertEquals(2, listener.bulkDeleted);
+
+            // clear
+            manager.clearAllReviews();
+            assertEquals(1, listener.cleared);
+
+            manager.removeReviewChangeListener(listener);
+        }
+    }
+
     @AfterEach
     void tearDown() {
         // Clean up test data
