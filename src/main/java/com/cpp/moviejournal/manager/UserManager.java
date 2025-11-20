@@ -416,4 +416,45 @@ public class UserManager {
             e.printStackTrace();
         }
     }
+
+    /**
+     * Update user's profile (username and email). Ensures uniqueness across other users.
+     * @param user The user containing updated fields and a valid id
+     * @return true if update succeeded, false otherwise
+     */
+    public boolean updateUserProfile(User user) {
+        if (user == null || user.getId() <= 0) return false;
+
+        // Check uniqueness for username and email excluding this user id
+        String checkSql = "SELECT COUNT(*) FROM users WHERE (username = ? OR email = ?) AND id != ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+            checkStmt.setString(1, user.getUsername());
+            checkStmt.setString(2, user.getEmail());
+            checkStmt.setInt(3, user.getId());
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return false; // conflict
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking user uniqueness: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+
+        String sql = "UPDATE users SET username = ?, email = ? WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, user.getUsername());
+            stmt.setString(2, user.getEmail());
+            stmt.setInt(3, user.getId());
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error updating user profile: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
 }
