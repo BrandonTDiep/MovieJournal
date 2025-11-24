@@ -7,10 +7,12 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class MovieReviewManager {
     
     private final int currentUserId;
+    private final List<ReviewChangeListener> listeners = new CopyOnWriteArrayList<>();
 
     public MovieReviewManager() {
         this(0);
@@ -19,6 +21,53 @@ public class MovieReviewManager {
     public MovieReviewManager(int currentUserId) {
         this.currentUserId = currentUserId;
         initializeDatabase();
+    }
+    
+    public int getCurrentUserId() {
+        return currentUserId;
+    }
+
+    // Observer registration
+    public void addReviewChangeListener(ReviewChangeListener listener) {
+        if (listener != null) {
+            listeners.add(listener);
+        }
+    }
+
+    public void removeReviewChangeListener(ReviewChangeListener listener) {
+        if (listener != null) {
+            listeners.remove(listener);
+        }
+    }
+
+    private void notifyReviewAdded(MovieReview review) {
+        for (ReviewChangeListener l : listeners) {
+            try { l.onReviewAdded(review); } catch (Exception ignored) { }
+        }
+    }
+
+    private void notifyReviewUpdated(MovieReview review) {
+        for (ReviewChangeListener l : listeners) {
+            try { l.onReviewUpdated(review); } catch (Exception ignored) { }
+        }
+    }
+
+    private void notifyReviewDeleted(int reviewId) {
+        for (ReviewChangeListener l : listeners) {
+            try { l.onReviewDeleted(reviewId); } catch (Exception ignored) { }
+        }
+    }
+
+    private void notifyReviewsBulkDeleted(int count) {
+        for (ReviewChangeListener l : listeners) {
+            try { l.onReviewsBulkDeleted(count); } catch (Exception ignored) { }
+        }
+    }
+
+    private void notifyReviewsCleared() {
+        for (ReviewChangeListener l : listeners) {
+            try { l.onReviewsCleared(); } catch (Exception ignored) { }
+        }
     }
 
     private void initializeDatabase() {
@@ -136,6 +185,7 @@ public class MovieReviewManager {
                         movieReview.setId(generatedKeys.getInt(1));
                     }
                 }
+                notifyReviewAdded(movieReview);
             }
         } catch (SQLException e) {
             System.err.println("Error adding review: " + e.getMessage());
@@ -160,6 +210,7 @@ public class MovieReviewManager {
             stmt.setInt(2, review.getUserId());
             
             stmt.executeUpdate();
+            notifyReviewDeleted(review.getId());
         } catch (SQLException e) {
             System.err.println("Error deleting review: " + e.getMessage());
             e.printStackTrace();
@@ -215,6 +266,9 @@ public class MovieReviewManager {
             }
             
             deletedCount = stmt.executeUpdate();
+            if (deletedCount > 0) {
+                notifyReviewsBulkDeleted(deletedCount);
+            }
             
         } catch (SQLException e) {
             System.err.println("Error deleting reviews: " + e.getMessage());
@@ -250,6 +304,7 @@ public class MovieReviewManager {
             stmt.setInt(8, original.getUserId());
             
             stmt.executeUpdate();
+            notifyReviewUpdated(updated);
         } catch (SQLException e) {
             System.err.println("Error updating review: " + e.getMessage());
             e.printStackTrace();
@@ -312,10 +367,10 @@ public class MovieReviewManager {
         
         switch (sortOption) {
             case "Date (Newest)":
-                sql += "date_watched DESC";
+                sql += "CAST(date_watched AS DATE) DESC, created_at DESC, id DESC";
                 break;
             case "Date (Oldest)":
-                sql += "date_watched ASC";
+                sql += "CAST(date_watched AS DATE) ASC, created_at DESC, id DESC";
                 break;
             case "Rating (High)":
                 sql += "rating DESC";
@@ -425,6 +480,7 @@ public class MovieReviewManager {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.executeUpdate();
+            notifyReviewsCleared();
         } catch (SQLException e) {
             System.err.println("Error clearing reviews: " + e.getMessage());
             e.printStackTrace();
