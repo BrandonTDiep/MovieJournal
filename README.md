@@ -9,7 +9,7 @@ A simple Java-based movie journal application that stores user accounts and movi
 
 1. Run project at Main.java
 
-2. Ensure you MySQL downloaded and create a .env file:
+2. Ensure you MySQL downloaded and create a .env file, use what you have DB_USER and DB_PASSWORD, here's an example:
 
 ```powershell
 DB_URL=jdbc:mysql://localhost:3306/moviejournal?useSSL=false&serverTimezone=UTC
