@@ -1,0 +1,126 @@
+@startuml
+' compact class icons
+skinparam classAttributeIconSize 0
+
+' ----- packages & stereotypes -----
+package "com.cpp.moviejournal.model" {
+  class User {
+    - int id
+    - String username
+    - String email
+    - String password            ' hashed, do not expose
+    - LocalDateTime createdAt
+    - LocalDateTime lastLogin
+    - boolean isActive
+    --
+    + User()
+    + User(String, String, String)
+    + User(int, String, String, String, LocalDateTime, LocalDateTime, boolean)
+    + boolean verifyPassword(String plainText)
+    + void setPlainTextPassword(String plainText)
+    + void setPassword(String hashed)
+    + static Builder builder()
+    ' (getters/setters intentionally omitted for clarity)
+  }
+
+  class "User.Builder" as UserBuilder  {
+    - int id
+    - String username
+    - String email
+    - String password
+    - boolean passwordIsPlaintext
+    - LocalDateTime createdAt
+    - LocalDateTime lastLogin
+    - boolean isActive
+    --
+    + Builder id(int)
+    + Builder username(String)
+    + Builder email(String)
+    + Builder plainTextPassword(String)
+    + Builder hashedPassword(String)
+    + Builder createdAt(LocalDateTime)
+    + Builder lastLogin(LocalDateTime)
+    + Builder active(boolean)
+    + User build()
+  }
+
+  class MovieReview {
+    - int id
+    - String title
+    - String director
+    - String genre
+    - double rating
+    - String review
+    - LocalDate dateWatched
+    --
+    + MovieReview(int, String, String, String, double, String)
+    + MovieReview(int, int, String, String, String, double, String, LocalDate)
+    + MovieReview(String, String, String, double, String)
+    + static Builder builder()
+  }
+
+  class "MovieReview.Builder" as MovieReviewBuilder  {
+    - int id
+    - int userId
+    - String title
+    - String director
+    - String genre
+    - double rating
+    - String review
+    - LocalDate dateWatched
+    --
+    + Builder id(int)
+    + Builder userId(int)
+    + Builder title(String)
+    + Builder director(String)
+    + Builder genre(String)
+    + Builder rating(double)
+    + Builder review(String)
+    + Builder dateWatched(LocalDate)
+    + MovieReview build()
+  }
+}
+
+package "com.cpp.moviejournal.manager" {
+  interface ReviewChangeListener {
+    + onReviewAdded(MovieReview)
+    + onReviewUpdated(MovieReview)
+    + onReviewDeleted(int)
+    + onReviewsBulkDeleted(int)
+    + onReviewsCleared()
+  }
+
+  class MovieReviewManager  {
+    - int currentUserId
+    - List<ReviewChangeListener> listeners
+    --
+    + addReview(MovieReview)
+    + updateReview(MovieReview, MovieReview)
+    + deleteReview(MovieReview)
+    + deleteReviews(List<MovieReview>) : int
+    + clearAllReviews()
+    + addReviewChangeListener(ReviewChangeListener)
+    + removeReviewChangeListener(ReviewChangeListener)
+  }
+}
+
+package "com.cpp.moviejournal.gui" {
+  class DashboardPanel
+  class ReviewManagementPanel
+}
+
+' ----- relationships -----
+' Builders: dependency (creates) — lightweight, not ownership/composition
+User ..> UserBuilder : creates
+MovieReview ..> MovieReviewBuilder : creates
+
+' Domain association: user (1) writes 0..* reviews
+' single association is sufficient — indicates multiplicities on both ends
+User "1" --> "0..*" MovieReview : writes >
+
+' Manager and listeners: aggregation + interface implementation
+MovieReviewManager "1" o-- "*" ReviewChangeListener : notifies
+DashboardPanel ..|> ReviewChangeListener
+ReviewManagementPanel ..|> ReviewChangeListener
+
+@enduml
