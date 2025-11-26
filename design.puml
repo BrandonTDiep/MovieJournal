@@ -2,6 +2,13 @@
 ' compact class icons
 skinparam classAttributeIconSize 0
 
+' Design Patterns (5 total):
+' 1. Builder Pattern - User.Builder, MovieReview.Builder
+' 2. Observer Pattern - ReviewChangeListener, MovieReviewManager
+' 3. Strategy Pattern - SortStrategy and implementations
+' 4. Singleton Pattern - DatabaseConnection
+' 5. Factory Pattern - PanelFactory
+
 ' ----- packages & stereotypes -----
 package "com.cpp.moviejournal.model" {
   class User {
@@ -23,7 +30,7 @@ package "com.cpp.moviejournal.model" {
     ' (getters/setters intentionally omitted for clarity)
   }
 
-  class "User.Builder" as UserBuilder  {
+  class "User.Builder" as UserBuilder <<Builder>> {
     - int id
     - String username
     - String email
@@ -59,7 +66,7 @@ package "com.cpp.moviejournal.model" {
     + static Builder builder()
   }
 
-  class "MovieReview.Builder" as MovieReviewBuilder  {
+  class "MovieReview.Builder" as MovieReviewBuilder <<Builder>> {
     - int id
     - int userId
     - String title
@@ -82,7 +89,7 @@ package "com.cpp.moviejournal.model" {
 }
 
 package "com.cpp.moviejournal.manager" {
-  interface ReviewChangeListener {
+  interface ReviewChangeListener <<Observer>> {
     + onReviewAdded(MovieReview)
     + onReviewUpdated(MovieReview)
     + onReviewDeleted(int)
@@ -90,7 +97,7 @@ package "com.cpp.moviejournal.manager" {
     + onReviewsCleared()
   }
 
-  class MovieReviewManager  {
+  class MovieReviewManager <<Subject>> {
     - int currentUserId
     - List<ReviewChangeListener> listeners
     --
@@ -101,6 +108,74 @@ package "com.cpp.moviejournal.manager" {
     + clearAllReviews()
     + addReviewChangeListener(ReviewChangeListener)
     + removeReviewChangeListener(ReviewChangeListener)
+    + getSortedReviews(String) : List<MovieReview>
+  }
+}
+
+package "com.cpp.moviejournal.strategy" {
+  interface SortStrategy <<Strategy>> {
+    + sort(List<MovieReview>) : List<MovieReview>
+  }
+  
+  class DateNewestSortStrategy <<Strategy>> {
+    + sort(List<MovieReview>) : List<MovieReview>
+  }
+  
+  class DateOldestSortStrategy <<Strategy>> {
+    + sort(List<MovieReview>) : List<MovieReview>
+  }
+  
+  class RatingHighSortStrategy <<Strategy>> {
+    + sort(List<MovieReview>) : List<MovieReview>
+  }
+  
+  class RatingLowSortStrategy <<Strategy>> {
+    + sort(List<MovieReview>) : List<MovieReview>
+  }
+  
+  class TitleAscendingSortStrategy <<Strategy>> {
+    + sort(List<MovieReview>) : List<MovieReview>
+  }
+  
+  class TitleDescendingSortStrategy <<Strategy>> {
+    + sort(List<MovieReview>) : List<MovieReview>
+  }
+  
+  class SortStrategyFactory <<Factory>> {
+    + {static} createStrategy(String) : SortStrategy
+  }
+}
+
+package "com.cpp.moviejournal.util" {
+  class DatabaseConnection <<Singleton>> {
+    - {static} volatile DatabaseConnection instance
+    - String URL
+    - String USER
+    - String PASSWORD
+    --
+    - DatabaseConnection()
+    + {static} getInstance() : DatabaseConnection
+    + getConnection() : Connection
+    + {static} getConnection() : Connection
+  }
+}
+
+package "com.cpp.moviejournal.factory" {
+  class PanelFactory <<Factory>> {
+    + {static} createPanel(PanelType, MovieReviewManager, UserManager) : JPanel
+    + {static} createLoginPanel() : JPanel
+    + {static} createSignupPanel() : JPanel
+    + {static} createDashboardPanel(MovieReviewManager) : JPanel
+    + {static} createReviewManagementPanel(MovieReviewManager) : JPanel
+    + {static} createUserProfilePanel(UserManager) : JPanel
+  }
+  
+  enum PanelType {
+    LOGIN
+    SIGNUP
+    DASHBOARD
+    REVIEW_MANAGEMENT
+    USER_PROFILE
   }
 }
 
@@ -110,17 +185,34 @@ package "com.cpp.moviejournal.gui" {
 }
 
 ' ----- relationships -----
-' Builders: dependency (creates) — lightweight, not ownership/composition
+' Builder Pattern: dependency (creates) — lightweight, not ownership/composition
 User ..> UserBuilder : creates
 MovieReview ..> MovieReviewBuilder : creates
 
 ' Domain association: user (1) writes 0..* reviews
-' single association is sufficient — indicates multiplicities on both ends
 User "1" --> "0..*" MovieReview : writes >
 
-' Manager and listeners: aggregation + interface implementation
+' Observer Pattern: aggregation + interface implementation
 MovieReviewManager "1" o-- "*" ReviewChangeListener : notifies
 DashboardPanel ..|> ReviewChangeListener
 ReviewManagementPanel ..|> ReviewChangeListener
+
+' Strategy Pattern: MovieReviewManager uses SortStrategy
+MovieReviewManager ..> SortStrategy : uses
+SortStrategy <|.. DateNewestSortStrategy
+SortStrategy <|.. DateOldestSortStrategy
+SortStrategy <|.. RatingHighSortStrategy
+SortStrategy <|.. RatingLowSortStrategy
+SortStrategy <|.. TitleAscendingSortStrategy
+SortStrategy <|.. TitleDescendingSortStrategy
+SortStrategyFactory ..> SortStrategy : creates
+
+' Singleton Pattern: DatabaseConnection
+DatabaseConnection --> DatabaseConnection : getInstance()
+
+' Factory Pattern: PanelFactory creates panels
+PanelFactory ..> DashboardPanel : creates
+PanelFactory ..> ReviewManagementPanel : creates
+PanelFactory ..> PanelType : uses
 
 @enduml
