@@ -5,9 +5,14 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-
+/**
+ * Singleton Pattern: Ensures only one instance of database connection manager exists
+ */
 public class DatabaseConnection {
-
+    
+    // Singleton instance
+    private static volatile DatabaseConnection instance;
+    
     // Use java-dotenv to load .env (if present). We still prefer real environment variables
     private static final Dotenv DOTENV = Dotenv.configure().ignoreIfMissing().load();
 
@@ -23,12 +28,47 @@ public class DatabaseConnection {
     }
 
     // Keys: DB_URL, DB_USER, DB_PASSWORD
-    private static final String URL = getEnv("DB_URL", "");
-    private static final String USER = getEnv("DB_USER", "");
-    private static final String PASSWORD = getEnv("DB_PASSWORD", "");
+    private final String URL = getEnv("DB_URL", "");
+    private final String USER = getEnv("DB_USER", "");
+    private final String PASSWORD = getEnv("DB_PASSWORD", "");
 
-    public static Connection getConnection() throws SQLException {
+    // Private constructor to prevent instantiation
+    private DatabaseConnection() {
+        // Private constructor for singleton
+    }
+
+    /**
+     * Singleton Pattern: Returns the single instance of DatabaseConnection
+     * Uses double-checked locking for thread safety
+     * @return The singleton instance
+     */
+    public static DatabaseConnection getInstance() {
+        if (instance == null) {
+            synchronized (DatabaseConnection.class) {
+                if (instance == null) {
+                    instance = new DatabaseConnection();
+                }
+            }
+        }
+        return instance;
+    }
+
+    /**
+     * Gets a database connection (instance method)
+     * @return A new Connection object
+     * @throws SQLException if connection fails
+     */
+    public Connection getConnectionInstance() throws SQLException {
         return DriverManager.getConnection(URL, USER, PASSWORD);
+    }
+
+    /**
+     * Static convenience method for backward compatibility
+     * @return A new Connection object
+     * @throws SQLException if connection fails
+     */
+    public static Connection getConnection() throws SQLException {
+        return getInstance().getConnectionInstance();
     }
 
     public static void main(String[] args) {

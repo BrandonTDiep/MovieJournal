@@ -1,6 +1,8 @@
 package com.cpp.moviejournal.manager;
 
 import com.cpp.moviejournal.model.MovieReview;
+import com.cpp.moviejournal.strategy.SortStrategy;
+import com.cpp.moviejournal.strategy.SortStrategyFactory;
 import com.cpp.moviejournal.util.DatabaseConnection;
 
 import java.sql.*;
@@ -361,45 +363,10 @@ public class MovieReviewManager {
     }
 
     public List<MovieReview> getSortedReviews(String sortOption) {
-        String prefix = currentUserId > 0 ? "SELECT * FROM movie_reviews WHERE user_id = ? ORDER BY "
-                                          : "SELECT * FROM movie_reviews ORDER BY ";
-        String sql = prefix;
-        
-        switch (sortOption) {
-            case "Date (Newest)":
-                sql += "CAST(date_watched AS DATE) DESC, created_at DESC, id DESC";
-                break;
-            case "Date (Oldest)":
-                sql += "CAST(date_watched AS DATE) ASC, created_at DESC, id DESC";
-                break;
-            case "Rating (High)":
-                sql += "rating DESC";
-                break;
-            case "Rating (Low)":
-                sql += "rating ASC";
-                break;
-            case "Title (A-Z)":
-                sql += "title ASC";
-                break;
-            case "Title (Z-A)":
-                sql += "title DESC";
-                break;
-            default:
-                sql += "created_at DESC";
-        }
-        
-        if (currentUserId > 0) {
-            try (Connection conn = DatabaseConnection.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setInt(1, currentUserId);
-                return executeQuery(stmt);
-            } catch (SQLException e) {
-                System.err.println("Error getting sorted reviews: " + e.getMessage());
-                e.printStackTrace();
-                return new ArrayList<>();
-            }
-        }
-        return executeQuery(sql);
+        // Strategy Pattern: Use strategy to sort reviews
+        List<MovieReview> reviews = getAllMovies();
+        SortStrategy strategy = SortStrategyFactory.createStrategy(sortOption);
+        return strategy.sort(reviews);
     }
 
 
