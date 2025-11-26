@@ -11,6 +11,8 @@ public class MovieReview {
     private double rating; // 1-5 stars
     private String review;
     private LocalDate dateWatched;
+    private String ticketImagePath;
+    private boolean favorite;
 
     // Constructor for new movie review
     public MovieReview(int userId, String title, String director, String genre, double rating, String dateWatched) {
@@ -42,6 +44,14 @@ public class MovieReview {
 
     // Constructor for database retrieval
     public MovieReview(int id, int userId, String title, String director, String genre, double rating, String review, LocalDate dateWatched) {
+        this(id, userId, title, director, genre, rating, review, dateWatched, null, false);
+    }
+
+    public MovieReview(String title, String director, String genre, double rating, String dateWatched) {
+        this(0, title, director, genre, rating, dateWatched); 
+    }
+
+    public MovieReview(int id, int userId, String title, String director, String genre, double rating, String review, LocalDate dateWatched, String ticketImagePath, boolean favorite) {
         this.id = id;
         this.userId = userId;
         this.title = title;
@@ -50,11 +60,8 @@ public class MovieReview {
         this.rating = rating;
         this.review = review != null ? review : "";
         this.dateWatched = dateWatched;
-    }
-
-    // Legacy constructor for backward compatibility
-    public MovieReview(String title, String director, String genre, double rating, String dateWatched) {
-        this(0, title, director, genre, rating, dateWatched); // userId = 0 for legacy usage
+        this.ticketImagePath = ticketImagePath;
+        this.favorite = favorite;
     }
 
     // Builder pattern for MovieReview
@@ -67,50 +74,62 @@ public class MovieReview {
         private double rating;
         private String review;
         private LocalDate dateWatched;
+        private String ticketImagePath;
+        private boolean favorite;
 
-        public Builder id(int id) {
+        public Builder setId(int id) {
             this.id = id;
             return this;
         }
 
-        public Builder userId(int userId) {
+        public Builder setUserId(int userId) {
             this.userId = userId;
             return this;
         }
 
-        public Builder title(String title) {
+        public Builder setTitle(String title) {
             this.title = title;
             return this;
         }
 
-        public Builder director(String director) {
+        public Builder setDirector(String director) {
             this.director = director;
             return this;
         }
 
-        public Builder genre(String genre) {
+        public Builder setGenre(String genre) {
             this.genre = genre;
             return this;
         }
 
-        public Builder rating(double rating) {
+        public Builder setRating(double rating) {
             this.rating = rating;
             return this;
         }
 
-        public Builder review(String review) {
+        public Builder setReview(String review) {
             this.review = review;
             return this;
         }
 
-        public Builder dateWatched(LocalDate dateWatched) {
+        public Builder setDateWatched(LocalDate dateWatched) {
             this.dateWatched = dateWatched;
+            return this;
+        }
+
+        public Builder setTicketImagePath(String ticketImagePath) {
+            this.ticketImagePath = ticketImagePath;
+            return this;
+        }
+
+        public Builder setFavorite(boolean favorite) {
+            this.favorite = favorite;
             return this;
         }
 
         public MovieReview build() {
             LocalDate date = dateWatched != null ? dateWatched : LocalDate.now();
-            MovieReview mr = new MovieReview(id, userId, title, director, genre, rating, review, date);
+            MovieReview mr = new MovieReview(id, userId, title, director, genre, rating, review, date, ticketImagePath, favorite);
             return mr;
         }
     }
@@ -184,6 +203,22 @@ public class MovieReview {
 
     public void setDateWatched(LocalDate dateWatched) {
         this.dateWatched = dateWatched;
+    }
+
+    public String getTicketImagePath() {
+        return ticketImagePath;
+    }
+
+    public void setTicketImagePath(String ticketImagePath) {
+        this.ticketImagePath = ticketImagePath;
+    }
+
+    public boolean isFavorite() {
+        return favorite;
+    }
+
+    public void setFavorite(boolean favorite) {
+        this.favorite = favorite;
     }
     
     // Helper method to get date as string for display
