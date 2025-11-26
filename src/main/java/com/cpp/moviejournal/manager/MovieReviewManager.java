@@ -85,6 +85,8 @@ public class MovieReviewManager {
                     rating DECIMAL(2,1) NOT NULL CHECK (rating >= 0 AND rating <= 5),
                     review TEXT,
                     date_watched DATE NOT NULL,
+                    ticket_image_path VARCHAR(500),
+                    is_favorite BOOLEAN DEFAULT FALSE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -138,6 +140,8 @@ public class MovieReviewManager {
                     }
                 }
             }
+            ensureColumnExists(conn, "movie_reviews", "ticket_image_path", "VARCHAR(500)");
+            ensureColumnExists(conn, "movie_reviews", "is_favorite", "BOOLEAN DEFAULT FALSE");
         } catch (SQLException e) {
             System.err.println("Error initializing database: " + e.getMessage());
             e.printStackTrace();
@@ -166,7 +170,7 @@ public class MovieReviewManager {
             movieReview.setUserId(currentUserId);
         }
         
-        String sql = "INSERT INTO movie_reviews (user_id, title, director, genre, rating, review, date_watched) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO movie_reviews (user_id, title, director, genre, rating, review, date_watched, ticket_image_path, is_favorite) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -178,6 +182,8 @@ public class MovieReviewManager {
             stmt.setDouble(5, movieReview.getRating());
             stmt.setString(6, review);
             stmt.setDate(7, Date.valueOf(movieReview.getDateWatched()));
+            stmt.setString(8, movieReview.getTicketImagePath());
+            stmt.setBoolean(9, movieReview.isFavorite());
             
             int rowsAffected = stmt.executeUpdate();
             
@@ -291,7 +297,7 @@ public class MovieReviewManager {
         // Ensure the updated review carries the same id as the original for equality checks in tests
         updated.setId(original.getId());
         
-        String sql = "UPDATE movie_reviews SET title = ?, director = ?, genre = ?, rating = ?, review = ?, date_watched = ? WHERE id = ? AND user_id = ?";
+        String sql = "UPDATE movie_reviews SET title = ?, director = ?, genre = ?, rating = ?, review = ?, date_watched = ?, ticket_image_path = ?, is_favorite = ? WHERE id = ? AND user_id = ?";
         
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -302,8 +308,10 @@ public class MovieReviewManager {
             stmt.setDouble(4, updated.getRating());
             stmt.setString(5, updated.getReview());
             stmt.setDate(6, Date.valueOf(updated.getDateWatched()));
-            stmt.setInt(7, original.getId());
-            stmt.setInt(8, original.getUserId());
+            stmt.setString(7, updated.getTicketImagePath());
+            stmt.setBoolean(8, updated.isFavorite());
+            stmt.setInt(9, original.getId());
+            stmt.setInt(10, original.getUserId());
             
             stmt.executeUpdate();
             notifyReviewUpdated(updated);
@@ -369,6 +377,26 @@ public class MovieReviewManager {
         return strategy.sort(reviews);
     }
 
+    public List<MovieReview> getFavoriteReviews() {
+        String sql = "SELECT * FROM movie_reviews WHERE is_favorite = TRUE";
+        if (currentUserId > 0) {
+            sql += " AND user_id = ?";
+        }
+        sql += " ORDER BY created_at DESC";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            if (currentUserId > 0) {
+                stmt.setInt(1, currentUserId);
+            }
+            return executeQuery(stmt);
+        } catch (SQLException e) {
+            System.err.println("Error getting favorite reviews: " + e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
 
     public double getAverageRating() {
         if (currentUserId > 0) {
@@ -423,11 +451,11 @@ public class MovieReviewManager {
             return 0;
         }
         String sql = "SELECT COUNT(*) FROM movie_reviews";
-        
+
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
-            
+
             if (rs.next()) {
                 return rs.getInt(1);
             }
@@ -435,8 +463,55 @@ public class MovieReviewManager {
             System.err.println("Error getting total reviews: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return 0;
+    }
+
+    public int getTheaterVisitCount() {
+        String sql = "SELECT COUNT(*) FROM movie_reviews WHERE ticket_image_path IS NOT NULL AND ticket_image_path <> ''";
+        if (currentUserId > 0) {
+            sql += " AND user_id = ?";
+        }
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            if (currentUserId > 0) {
+                stmt.setInt(1, currentUserId);
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting theater visit count: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public void setFavoriteStatus(MovieReview review, boolean favorite) {
+        if (review == null) {
+            return;
+        }
+        if (currentUserId > 0) {
+            review.setUserId(currentUserId);
+        }
+
+        String sql = "UPDATE movie_reviews SET is_favorite = ? WHERE id = ? AND user_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setBoolean(1, favorite);
+            stmt.setInt(2, review.getId());
+            stmt.setInt(3, review.getUserId());
+            stmt.executeUpdate();
+            review.setFavorite(favorite);
+            notifyReviewUpdated(review);
+        } catch (SQLException e) {
+            System.err.println("Error updating favorite status: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     // Method to clear all reviews (useful for testing)
@@ -472,22 +547,41 @@ public class MovieReviewManager {
         
         try (ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                int id = rs.getInt("id");
-                int userId = rs.getInt("user_id");
-                String title = rs.getString("title");
-                String director = rs.getString("director");
-                String genre = rs.getString("genre");
-                double rating = rs.getDouble("rating");
-                String reviewText = rs.getString("review");
-                LocalDate dateWatched = rs.getDate("date_watched").toLocalDate();
-                
-                MovieReview review = new MovieReview(id, userId, title, director, genre, rating, 
-                    reviewText != null ? reviewText : "", dateWatched);
-                
+                MovieReview review = MovieReview.builder()
+                        .setId(rs.getInt("id"))
+                        .setUserId(rs.getInt("user_id"))
+                        .setTitle(rs.getString("title"))
+                        .setDirector(rs.getString("director"))
+                        .setGenre(rs.getString("genre"))
+                        .setRating(rs.getDouble("rating"))
+                        .setReview(rs.getString("review"))
+                        .setDateWatched(rs.getDate("date_watched").toLocalDate())
+                        .setTicketImagePath(rs.getString("ticket_image_path"))
+                        .setFavorite(rs.getBoolean("is_favorite"))
+                        .build();
+
                 reviews.add(review);
             }
         }
         
         return reviews;
+    }
+
+    private void ensureColumnExists(Connection conn, String tableName, String columnName, String columnDefinition) throws SQLException {
+        DatabaseMetaData metaData = conn.getMetaData();
+        boolean exists = columnExists(metaData, tableName, columnName)
+                || columnExists(metaData, tableName.toUpperCase(), columnName.toUpperCase());
+        if (!exists) {
+            String alterSQL = "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition;
+            try (PreparedStatement alterStmt = conn.prepareStatement(alterSQL)) {
+                alterStmt.executeUpdate();
+            }
+        }
+    }
+
+    private boolean columnExists(DatabaseMetaData metaData, String tableName, String columnName) throws SQLException {
+        try (ResultSet rs = metaData.getColumns(null, null, tableName, columnName)) {
+            return rs.next();
+        }
     }
 }
