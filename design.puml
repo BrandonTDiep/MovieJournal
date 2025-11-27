@@ -59,10 +59,17 @@ package "com.cpp.moviejournal.model" {
     - double rating
     - String review
     - LocalDate dateWatched
+    - String ticketImagePath
+    - boolean favorite
     --
     + MovieReview(int, String, String, String, double, String)
     + MovieReview(int, int, String, String, String, double, String, LocalDate)
+    + MovieReview(int, int, String, String, String, double, String, LocalDate, String, boolean)
     + MovieReview(String, String, String, double, String)
+    + String getTicketImagePath()
+    + void setTicketImagePath(String)
+    + boolean isFavorite()
+    + void setFavorite(boolean)
     + static Builder builder()
   }
 
@@ -75,15 +82,19 @@ package "com.cpp.moviejournal.model" {
     - double rating
     - String review
     - LocalDate dateWatched
+    - String ticketImagePath
+    - boolean favorite
     --
-    + Builder id(int)
-    + Builder userId(int)
-    + Builder title(String)
-    + Builder director(String)
-    + Builder genre(String)
-    + Builder rating(double)
-    + Builder review(String)
-    + Builder dateWatched(LocalDate)
+    + Builder setId(int)
+    + Builder setUserId(int)
+    + Builder setTitle(String)
+    + Builder setDirector(String)
+    + Builder setGenre(String)
+    + Builder setRating(double)
+    + Builder setReview(String)
+    + Builder setDateWatched(LocalDate)
+    + Builder setTicketImagePath(String)
+    + Builder setFavorite(boolean)
     + MovieReview build()
   }
 }
@@ -109,6 +120,9 @@ package "com.cpp.moviejournal.manager" {
     + addReviewChangeListener(ReviewChangeListener)
     + removeReviewChangeListener(ReviewChangeListener)
     + getSortedReviews(String) : List<MovieReview>
+    + getFavoriteReviews() : List<MovieReview>
+    + setFavoriteStatus(MovieReview, boolean)
+    + getReviewsWithTickets() : int
   }
 }
 
@@ -167,6 +181,7 @@ package "com.cpp.moviejournal.factory" {
     + {static} createSignupPanel() : JPanel
     + {static} createDashboardPanel(MovieReviewManager) : JPanel
     + {static} createReviewManagementPanel(MovieReviewManager) : JPanel
+    + {static} createFavoriteReviewsPanel(MovieReviewManager) : JPanel
     + {static} createUserProfilePanel(UserManager) : JPanel
   }
   
@@ -175,13 +190,30 @@ package "com.cpp.moviejournal.factory" {
     SIGNUP
     DASHBOARD
     REVIEW_MANAGEMENT
+    FAVORITE_REVIEWS
     USER_PROFILE
   }
 }
 
 package "com.cpp.moviejournal.gui" {
-  class DashboardPanel
-  class ReviewManagementPanel
+  class DashboardPanel {
+    + refreshData()
+    + setMovieReviewManager(MovieReviewManager)
+  }
+  
+  class ReviewManagementPanel {
+    + refreshData()
+    + setMovieReviewManager(MovieReviewManager)
+    + handleTicketUpload()
+    + toggleFavoriteSelectedReview()
+    + updateTicketPreview(String)
+  }
+  
+  class FavoriteReviewsPanel {
+    + refreshData()
+    + setMovieReviewManager(MovieReviewManager)
+    + displayTicketPreview(String)
+  }
 }
 
 ' ----- relationships -----
@@ -196,6 +228,7 @@ User "1" --> "0..*" MovieReview : writes >
 MovieReviewManager "1" o-- "*" ReviewChangeListener : notifies
 DashboardPanel ..|> ReviewChangeListener
 ReviewManagementPanel ..|> ReviewChangeListener
+FavoriteReviewsPanel ..|> ReviewChangeListener
 
 ' Strategy Pattern: MovieReviewManager uses SortStrategy
 MovieReviewManager ..> SortStrategy : uses
@@ -213,6 +246,12 @@ DatabaseConnection --> DatabaseConnection : getInstance()
 ' Factory Pattern: PanelFactory creates panels
 PanelFactory ..> DashboardPanel : creates
 PanelFactory ..> ReviewManagementPanel : creates
+PanelFactory ..> FavoriteReviewsPanel : creates
 PanelFactory ..> PanelType : uses
+
+' Ticket Upload and Favorite Features
+MovieReview --> ReviewManagementPanel : ticket upload
+MovieReview --> FavoriteReviewsPanel : favorite display
+MovieReviewManager --> MovieReview : manages favorites & tickets
 
 @enduml
