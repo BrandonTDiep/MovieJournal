@@ -1,6 +1,7 @@
 package com.cpp.moviejournal.factory;
 
 import com.cpp.moviejournal.gui.DashboardPanel;
+import com.cpp.moviejournal.gui.FavoriteReviewsPanel;
 import com.cpp.moviejournal.gui.LoginPanel;
 import com.cpp.moviejournal.gui.ReviewManagementPanel;
 import com.cpp.moviejournal.gui.SignupPanel;
@@ -28,6 +29,7 @@ public class PanelFactory {
             case SIGNUP -> createSignupPanel();
             case DASHBOARD -> createDashboardPanel(movieReviewManager);
             case REVIEW_MANAGEMENT -> createReviewManagementPanel(movieReviewManager);
+            case FAVORITE_REVIEWS -> createFavoriteReviewsPanel(movieReviewManager);
             case USER_PROFILE -> createUserProfilePanel(userManager);
         };
     }
@@ -56,6 +58,14 @@ public class PanelFactory {
         return panel;
     }
     
+    private static JPanel createFavoriteReviewsPanel(MovieReviewManager movieReviewManager) {
+        FavoriteReviewsPanel panel = new FavoriteReviewsPanel();
+        if (movieReviewManager != null) {
+            panel.setMovieReviewManager(movieReviewManager);
+        }
+        return panel;
+    }
+    
     private static JPanel createUserProfilePanel(UserManager userManager) {
         UserProfilePanel panel = new UserProfilePanel();
         if (userManager != null) {
@@ -72,7 +82,9 @@ public class PanelFactory {
         SIGNUP,
         DASHBOARD,
         REVIEW_MANAGEMENT,
+        FAVORITE_REVIEWS,
         USER_PROFILE
     }
 }
+
 

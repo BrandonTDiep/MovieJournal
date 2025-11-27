@@ -1,5 +1,6 @@
 package com.cpp.moviejournal.gui;
 
+import com.cpp.moviejournal.factory.PanelFactory;
 import com.cpp.moviejournal.manager.MovieReviewManager;
 import com.cpp.moviejournal.manager.UserManager;
 import com.cpp.moviejournal.model.User;
@@ -33,11 +34,12 @@ public class MovieJournalGUI extends JFrame {
     // Main application components
     private DashboardPanel dashboardPanel;
     private ReviewManagementPanel reviewManagementPanel;
+    private FavoriteReviewsPanel favoriteReviewsPanel;
     private UserProfilePanel userProfilePanel;
     
     // Navigation
     private JPanel navigationPanel;
-    private JButton dashboardBtn, reviewsBtn, profileBtn, logoutBtn;
+    private JButton dashboardBtn, reviewsBtn, favoritesBtn, profileBtn, logoutBtn;
     
     public MovieJournalGUI() {
         // Show splash screen first
@@ -70,18 +72,26 @@ public class MovieJournalGUI extends JFrame {
         mainPanel = new JPanel(cardLayout);
         mainPanel.setBackground(new Color(248, 249, 250));
         
-        // Initialize panels
-        loginPanel = new LoginPanel();
-        signupPanel = new SignupPanel();
-        dashboardPanel = new DashboardPanel();
-        reviewManagementPanel = new ReviewManagementPanel();
-        userProfilePanel = new UserProfilePanel();
+        // Initialize panels using Factory Pattern
+        loginPanel = (LoginPanel) PanelFactory.createPanel(
+            PanelFactory.PanelType.LOGIN, null, null);
+        signupPanel = (SignupPanel) PanelFactory.createPanel(
+            PanelFactory.PanelType.SIGNUP, null, null);
+        dashboardPanel = (DashboardPanel) PanelFactory.createPanel(
+            PanelFactory.PanelType.DASHBOARD, movieReviewManager, null);
+        reviewManagementPanel = (ReviewManagementPanel) PanelFactory.createPanel(
+            PanelFactory.PanelType.REVIEW_MANAGEMENT, movieReviewManager, null);
+        favoriteReviewsPanel = (FavoriteReviewsPanel) PanelFactory.createPanel(
+            PanelFactory.PanelType.FAVORITE_REVIEWS, movieReviewManager, null);
+        userProfilePanel = (UserProfilePanel) PanelFactory.createPanel(
+            PanelFactory.PanelType.USER_PROFILE, null, userManager);
         
         // Add panels to card layout
         mainPanel.add(loginPanel, "LOGIN");
         mainPanel.add(signupPanel, "SIGNUP");
         mainPanel.add(dashboardPanel, "DASHBOARD");
         mainPanel.add(reviewManagementPanel, "REVIEWS");
+        mainPanel.add(favoriteReviewsPanel, "FAVORITES");
         mainPanel.add(userProfilePanel, "PROFILE");
         
         // Create navigation panel
@@ -105,11 +115,14 @@ public class MovieJournalGUI extends JFrame {
         // Navigation buttons
         dashboardBtn = createNavButton("🏠 Dashboard", new Color(40, 167, 69));
         reviewsBtn = createNavButton("🎬 Reviews", new Color(0, 123, 255));
+        favoritesBtn = createNavButton("⭐ Favorites", new Color(255, 193, 7));
+        favoritesBtn.setForeground(Color.BLACK);
         profileBtn = createNavButton("👤 Profile", new Color(108, 117, 125));
         logoutBtn = createNavButton("🚪 Logout", new Color(220, 53, 69));
         
         navigationPanel.add(dashboardBtn);
         navigationPanel.add(reviewsBtn);
+        navigationPanel.add(favoritesBtn);
         navigationPanel.add(profileBtn);
         navigationPanel.add(Box.createHorizontalGlue());
         navigationPanel.add(logoutBtn);
@@ -149,6 +162,7 @@ public class MovieJournalGUI extends JFrame {
                 // Set managers for panels
                 dashboardPanel.setMovieReviewManager(movieReviewManager);
                 reviewManagementPanel.setMovieReviewManager(movieReviewManager);
+                favoriteReviewsPanel.setMovieReviewManager(movieReviewManager);
                 userProfilePanel.setUserManager(userManager);
                 
                 showMainApplication();
@@ -177,6 +191,7 @@ public class MovieJournalGUI extends JFrame {
         dashboardBtn.addActionListener(e -> showDashboard());
         reviewsBtn.addActionListener(e -> showReviews());
         profileBtn.addActionListener(e -> showProfile());
+        favoritesBtn.addActionListener(e -> showFavorites());
         logoutBtn.addActionListener(e -> logout());
         
         // Dashboard button events
@@ -210,6 +225,11 @@ public class MovieJournalGUI extends JFrame {
     private void showReviews() {
         cardLayout.show(mainPanel, "REVIEWS");
         reviewManagementPanel.refreshData();
+    }
+
+    private void showFavorites() {
+        cardLayout.show(mainPanel, "FAVORITES");
+        favoriteReviewsPanel.refreshData();
     }
     
     private void showProfile() {

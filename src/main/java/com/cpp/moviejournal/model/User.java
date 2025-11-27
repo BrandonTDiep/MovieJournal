@@ -189,4 +189,92 @@ public class User {
     public int hashCode() {
         return Objects.hash(username, email);
     }
+
+    // Builder Pattern for User
+    public static class Builder {
+        private int id;
+        private String username;
+        private String email;
+        private String password;
+        private boolean passwordIsPlaintext;
+        private LocalDateTime createdAt;
+        private LocalDateTime lastLogin;
+        private boolean isActive;
+
+        public Builder() {
+            this.isActive = true;
+            this.createdAt = LocalDateTime.now();
+        }
+
+        public Builder setId(int id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder setUsername(String username) {
+            this.username = username;
+            return this;
+        }
+
+        public Builder setEmail(String email) {
+            this.email = email;
+            return this;
+        }
+
+        public Builder setPlainTextPassword(String password) {
+            this.password = password;
+            this.passwordIsPlaintext = true;
+            return this;
+        }
+
+        public Builder setHashedPassword(String password) {
+            this.password = password;
+            this.passwordIsPlaintext = false;
+            return this;
+        }
+
+        public Builder setCreatedAt(LocalDateTime createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder setLastLogin(LocalDateTime lastLogin) {
+            this.lastLogin = lastLogin;
+            return this;
+        }
+
+        public Builder setActive(boolean isActive) {
+            this.isActive = isActive;
+            return this;
+        }
+
+        public User build() {
+            User user = new User();
+            user.setId(id);
+            user.setUsername(username);
+            user.setEmail(email);
+            
+            if (password != null) {
+                if (passwordIsPlaintext) {
+                    user.setPlainTextPassword(password);
+                } else {
+                    user.setPassword(password);
+                }
+            }
+            
+            user.setCreatedAt(createdAt);
+            user.setLastLogin(lastLogin);
+            user.setActive(isActive);
+            
+            return user;
+        }
+    }
+
+    /**
+     * Creates a new Builder instance for constructing User objects
+     * @return A new Builder instance
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
 }
