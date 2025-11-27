@@ -20,6 +20,7 @@ public class DashboardPanel extends JPanel implements ReviewChangeListener {
     // Statistics components
     private JLabel totalReviewsLabel;
     private JLabel averageRatingLabel;
+    private JLabel theaterVisitsLabel;
     private JLabel recentReviewsLabel;
     
     // Recent reviews table
@@ -52,6 +53,7 @@ public class DashboardPanel extends JPanel implements ReviewChangeListener {
         // Statistics labels
         totalReviewsLabel = new JLabel("0");
         averageRatingLabel = new JLabel("0.0");
+        theaterVisitsLabel = new JLabel("0");
         recentReviewsLabel = new JLabel("Recent Reviews");
         
         // Recent reviews table
@@ -95,6 +97,9 @@ public class DashboardPanel extends JPanel implements ReviewChangeListener {
         // Average rating card
         JPanel averageRatingCard = createStatCard("⭐ Average Rating", averageRatingLabel, new Color(40, 167, 69));
         panel.add(averageRatingCard);
+
+        JPanel theaterVisitsCard = createStatCard("🎟️ Times You Went", theaterVisitsLabel, new Color(255, 193, 7));
+        panel.add(theaterVisitsCard);
         
         return panel;
     }
@@ -222,9 +227,11 @@ public class DashboardPanel extends JPanel implements ReviewChangeListener {
         // Update statistics
         int totalReviews = movieReviewManager.getTotalReviews();
         double averageRating = movieReviewManager.getAverageRating();
+        int theaterVisits = movieReviewManager.getTheaterVisitCount();
         
         totalReviewsLabel.setText(String.valueOf(totalReviews));
         averageRatingLabel.setText(String.format("%.1f", averageRating));
+        theaterVisitsLabel.setText(String.valueOf(theaterVisits));
         
         // Update recent reviews table
         List<MovieReview> recentReviews = movieReviewManager.getAllMovies();
