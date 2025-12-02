@@ -163,13 +163,13 @@ package "com.cpp.moviejournal.strategy" {
 package "com.cpp.moviejournal.util" {
   class DatabaseConnection <<Singleton>> {
     - {static} volatile DatabaseConnection instance
-    - String URL
-    - String USER
-    - String PASSWORD
+    - String url
+    - String user
+    - String password
     --
     - DatabaseConnection()
     + {static} getInstance() : DatabaseConnection
-    + getConnection() : Connection
+    + getConnectionInstance() : Connection
     + {static} getConnection() : Connection
   }
 }
