@@ -6,16 +6,18 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Strategy Pattern: Sorts reviews by title (A-Z)
+ * Strategy Pattern: Sorts reviews by title (A-Z).
+ * Reviews with the same title are sorted by director in ascending order.
  */
 public class TitleAscendingSortStrategy implements SortStrategy {
-    @Override
-    public List<MovieReview> sort(List<MovieReview> reviews) {
-        List<MovieReview> sorted = new ArrayList<>(reviews);
-        sorted.sort(Comparator
-            .comparing(MovieReview::getTitle, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+  @Override
+  public List<MovieReview> sort(List<MovieReview> reviews) {
+    List<MovieReview> sorted = new ArrayList<>(reviews);
+    sorted.sort(
+        Comparator.comparing(
+                MovieReview::getTitle, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
             .thenComparing(MovieReview::getDirector));
-        return sorted;
-    }
+    return sorted;
+  }
 }
 
