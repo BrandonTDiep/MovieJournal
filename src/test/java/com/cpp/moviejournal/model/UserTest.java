@@ -1,116 +1,131 @@
 package com.cpp.moviejournal.model;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.cpp.moviejournal.util.PasswordUtil;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
- * Comprehensive unit tests for User class
- * Tests all methods with valid and invalid inputs, edge cases, and exception handling
+ * Comprehensive unit tests for User class.
+ * Tests all methods with valid and invalid inputs, edge cases, and exception handling.
  */
 @DisplayName("User Unit Tests")
 class UserTest {
+  private static final String VALID_USERNAME = "testuser";
+  private static final String VALID_EMAIL = "test@example.com";
+  private static final String VALID_PASSWORD = "password123";
+  private static final String NEW_USERNAME = "newuser";
+  private static final String NEW_EMAIL = "newuser@example.com";
+  private static final String NEW_PASSWORD = "newpass123";
+  private static final String FULL_USERNAME = "fulluser";
+  private static final String FULL_EMAIL = "fulluser@example.com";
+  private static final String TEST_PASSWORD = "testpassword123";
+  private static final String EMPTY_STRING = "";
+  private static final String WHITESPACE_STRING = "   ";
+  private static final int TEST_ID = 1;
+  private static final int NEW_ID = 42;
+  private static final int LONG_STRING_LENGTH = 1000;
+  private static final int MAX_USERNAME_LENGTH = 50;
+  private static final String SPECIAL_CHARS = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~";
+  private static final String UNICODE_STRING = "用户登录 🎬 电影";
+  private static final String WHITESPACE_STRING_FULL = "   \t\n   ";
+  private static final String EMAIL_DOMAIN = "@example.com";
 
-    private User validUser;
-    private static final String VALID_USERNAME = "testuser";
-    private static final String VALID_EMAIL = "test@example.com";
-    private static final String VALID_PASSWORD = "password123";
+  private User validUser;
 
-    @BeforeEach
-    void setUp() {
-        validUser = new User(VALID_USERNAME, VALID_EMAIL, VALID_PASSWORD);
+  @BeforeEach
+  void setUp() {
+    validUser = new User(VALID_USERNAME, VALID_EMAIL, VALID_PASSWORD);
+  }
+
+  @Nested
+  @DisplayName("Constructor Tests")
+  class ConstructorTests {
+
+    @Test
+    @DisplayName("Should create User with default constructor")
+    void shouldCreateUserWithDefaultConstructor() {
+      // When
+      User user = new User();
+
+      // Then
+      assertNotNull(user);
+      assertTrue(user.isActive());
+      assertNotNull(user.getCreatedAt());
+      assertNull(user.getUsername());
+      assertNull(user.getEmail());
+      assertNull(user.getPassword());
     }
 
-    // ------------------------------------------------------------------------------
-    // Constructor Tests
-    // ------------------------------------------------------------------------------
-    @Nested
-    @DisplayName("Constructor Tests")
-    class ConstructorTests {
+    @Test
+    @DisplayName("Should create User with username, email, and password")
+    void shouldCreateUserWithUsernameEmailAndPassword() {
+      // When
+      User user = new User(NEW_USERNAME, NEW_EMAIL, NEW_PASSWORD);
 
-        @Test
-        @DisplayName("Should create User with default constructor")
-        void shouldCreateUserWithDefaultConstructor() {
-            // When
-            User user = new User();
-            
-            // Then
-            assertNotNull(user);
-            assertTrue(user.isActive());
-            assertNotNull(user.getCreatedAt());
-            assertNull(user.getUsername());
-            assertNull(user.getEmail());
-            assertNull(user.getPassword());
-        }
-
-        @Test
-        @DisplayName("Should create User with username, email, and password")
-        void shouldCreateUserWithUsernameEmailAndPassword() {
-            // When
-            User user = new User("newuser", "newuser@example.com", "newpass123");
-            
-            // Then
-            assertNotNull(user);
-            assertEquals("newuser", user.getUsername());
-            assertEquals("newuser@example.com", user.getEmail());
-            // Password should be hashed, not plain text
-            assertNotEquals("newpass123", user.getPassword());
-            assertTrue(user.isPasswordHashed());
-            assertTrue(user.verifyPassword("newpass123")); // Should verify correctly
-            assertTrue(user.isActive());
-            assertNotNull(user.getCreatedAt());
-        }
-
-        @Test
-        @DisplayName("Should create User with all fields")
-        void shouldCreateUserWithAllFields() {
-            // Given
-            LocalDateTime createdAt = LocalDateTime.now().minusDays(1);
-            LocalDateTime lastLogin = LocalDateTime.now().minusHours(2);
-            // Create a real BCrypt hash for testing
-            String hashedPassword = PasswordUtil.hashPassword("testpassword123");
-            
-            // When
-            User user = new User(1, "fulluser", "fulluser@example.com", hashedPassword, 
-                               createdAt, lastLogin, true);
-            
-            // Then
-            assertEquals(1, user.getId());
-            assertEquals("fulluser", user.getUsername());
-            assertEquals("fulluser@example.com", user.getEmail());
-            assertEquals(hashedPassword, user.getPassword()); // Should store the hashed password as-is
-            assertTrue(user.isPasswordHashed());
-            assertEquals(createdAt, user.getCreatedAt());
-            assertEquals(lastLogin, user.getLastLogin());
-            assertTrue(user.isActive());
-        }
+      // Then
+      assertNotNull(user);
+      assertEquals(NEW_USERNAME, user.getUsername());
+      assertEquals(NEW_EMAIL, user.getEmail());
+      // Password should be hashed, not plain text
+      assertFalse(NEW_PASSWORD.equals(user.getPassword()));
+      assertTrue(user.isPasswordHashed());
+      assertTrue(user.verifyPassword(NEW_PASSWORD)); // Should verify correctly
+      assertTrue(user.isActive());
+      assertNotNull(user.getCreatedAt());
     }
 
-    // ------------------------------------------------------------------------------
-    // Getter and Setter Tests
-    // ------------------------------------------------------------------------------
-    @Nested
-    @DisplayName("Getter and Setter Tests")
-    class GetterSetterTests {
+    @Test
+    @DisplayName("Should create User with all fields")
+    void shouldCreateUserWithAllFields() {
+      // Given
+      LocalDateTime createdAt = LocalDateTime.now().minusDays(1);
+      LocalDateTime lastLogin = LocalDateTime.now().minusHours(2);
+      // Create a real BCrypt hash for testing
+      String hashedPassword = PasswordUtil.hashPassword(TEST_PASSWORD);
 
-        @Test
-        @DisplayName("Should get and set id correctly")
-        void shouldGetAndSetIdCorrectly() {
-            // Given
-            int newId = 42;
-            
-            // When
-            validUser.setId(newId);
-            
-            // Then
-            assertEquals(newId, validUser.getId());
-        }
+      // When
+      User user =
+          new User(TEST_ID, FULL_USERNAME, FULL_EMAIL, hashedPassword, createdAt, lastLogin, true);
+
+      // Then
+      assertEquals(TEST_ID, user.getId());
+      assertEquals(FULL_USERNAME, user.getUsername());
+      assertEquals(FULL_EMAIL, user.getEmail());
+      assertEquals(hashedPassword, user.getPassword()); // Should store the hashed password as-is
+      assertTrue(user.isPasswordHashed());
+      assertEquals(createdAt, user.getCreatedAt());
+      assertEquals(lastLogin, user.getLastLogin());
+      assertTrue(user.isActive());
+    }
+  }
+
+  @Nested
+  @DisplayName("Getter and Setter Tests")
+  class GetterSetterTests {
+
+    @Test
+    @DisplayName("Should get and set id correctly")
+    void shouldGetAndSetIdCorrectly() {
+      // Given
+      int newId = NEW_ID;
+
+      // When
+      validUser.setId(newId);
+
+      // Then
+      assertEquals(newId, validUser.getId());
+    }
 
         @Test
         @DisplayName("Should get and set username correctly")
@@ -238,23 +253,19 @@ class UserTest {
             assertFalse(isValid);
         }
         
-        @Test
-        @DisplayName("Should throw exception for null plain text password")
-        void shouldThrowExceptionForNullPlainTextPassword() {
-            // When & Then
-            assertThrows(IllegalArgumentException.class, () -> {
-                validUser.setPlainTextPassword(null);
-            });
-        }
-        
-        @Test
-        @DisplayName("Should throw exception for empty plain text password")
-        void shouldThrowExceptionForEmptyPlainTextPassword() {
-            // When & Then
-            assertThrows(IllegalArgumentException.class, () -> {
-                validUser.setPlainTextPassword("");
-            });
-        }
+    @Test
+    @DisplayName("Should throw exception for null plain text password")
+    void shouldThrowExceptionForNullPlainTextPassword() {
+      // When & Then
+      assertThrows(IllegalArgumentException.class, () -> validUser.setPlainTextPassword(null));
+    }
+
+    @Test
+    @DisplayName("Should throw exception for empty plain text password")
+    void shouldThrowExceptionForEmptyPlainTextPassword() {
+      // When & Then
+      assertThrows(IllegalArgumentException.class, () -> validUser.setPlainTextPassword(EMPTY_STRING));
+    }
 
         @Test
         @DisplayName("Should get and set created at correctly")
@@ -309,12 +320,9 @@ class UserTest {
         }
     }
 
-    // ------------------------------------------------------------------------------
-    // Business Logic Tests
-    // ------------------------------------------------------------------------------
-    @Nested
-    @DisplayName("Business Logic Tests")
-    class BusinessLogicTests {
+  @Nested
+  @DisplayName("Business Logic Tests")
+  class BusinessLogicTests {
 
         @Test
         @DisplayName("Should update last login time")
@@ -363,29 +371,29 @@ class UserTest {
     @DisplayName("Validation Tests")
     class ValidationTests {
 
-        @Test
-        @DisplayName("Should validate correct username")
-        void shouldValidateCorrectUsername() {
-            // Test various valid usernames
-            String[] validUsernames = {"user", "testuser", "user123", "a".repeat(50)};
-            
-            for (String username : validUsernames) {
-                validUser.setUsername(username);
-                assertTrue(validUser.isValidUsername(), "Username '" + username + "' should be valid");
-            }
-        }
+    @Test
+    @DisplayName("Should validate correct username")
+    void shouldValidateCorrectUsername() {
+      // Test various valid usernames
+      String[] validUsernames = {"user", "testuser", "user123", "a".repeat(MAX_USERNAME_LENGTH)};
 
-        @Test
-        @DisplayName("Should reject invalid username")
-        void shouldRejectInvalidUsername() {
-            // Test various invalid usernames
-            String[] invalidUsernames = {null, "", "  ", "ab", "a".repeat(51)};
-            
-            for (String username : invalidUsernames) {
-                validUser.setUsername(username);
-                assertFalse(validUser.isValidUsername(), "Username '" + username + "' should be invalid");
-            }
-        }
+      for (String username : validUsernames) {
+        validUser.setUsername(username);
+        assertTrue(validUser.isValidUsername(), "Username '" + username + "' should be valid");
+      }
+    }
+
+    @Test
+    @DisplayName("Should reject invalid username")
+    void shouldRejectInvalidUsername() {
+      // Test various invalid usernames
+      String[] invalidUsernames = {null, EMPTY_STRING, WHITESPACE_STRING, "ab", "a".repeat(MAX_USERNAME_LENGTH + 1)};
+
+      for (String username : invalidUsernames) {
+        validUser.setUsername(username);
+        assertFalse(validUser.isValidUsername(), "Username '" + username + "' should be invalid");
+      }
+    }
 
         @Test
         @DisplayName("Should validate correct email")
@@ -611,90 +619,81 @@ class UserTest {
     @DisplayName("Edge Cases and Error Handling")
     class EdgeCasesAndErrorHandlingTests {
 
-        @Test
-        @DisplayName("Should handle very long strings")
-        void shouldHandleVeryLongStrings() {
-            // Given
-            String longString = "A".repeat(1000);
-            
-            // When
-            validUser.setUsername(longString);
-            validUser.setEmail(longString + "@example.com");
-            validUser.setPassword(longString);
-            
-            // Then
-            assertEquals(longString, validUser.getUsername());
-            assertEquals(longString + "@example.com", validUser.getEmail());
-            assertEquals(longString, validUser.getPassword());
-        }
+    @Test
+    @DisplayName("Should handle very long strings")
+    void shouldHandleVeryLongStrings() {
+      // Given
+      String longString = "A".repeat(LONG_STRING_LENGTH);
 
-        @Test
-        @DisplayName("Should handle special characters in strings")
-        void shouldHandleSpecialCharactersInStrings() {
-            // Given
-            String specialChars = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~";
-            
-            // When
-            validUser.setUsername(specialChars);
-            validUser.setEmail(specialChars + "@example.com");
-            validUser.setPassword(specialChars);
-            
-            // Then
-            assertEquals(specialChars, validUser.getUsername());
-            assertEquals(specialChars + "@example.com", validUser.getEmail());
-            assertEquals(specialChars, validUser.getPassword());
-        }
+      // When
+      validUser.setUsername(longString);
+      validUser.setEmail(longString + EMAIL_DOMAIN);
+      validUser.setPassword(longString);
 
-        @Test
-        @DisplayName("Should handle unicode characters")
-        void shouldHandleUnicodeCharacters() {
-            // Given
-            String unicodeString = "用户登录 🎬 电影";
-            
-            // When
-            validUser.setUsername(unicodeString);
-            validUser.setEmail(unicodeString + "@example.com");
-            validUser.setPassword(unicodeString);
-            
-            // Then
-            assertEquals(unicodeString, validUser.getUsername());
-            assertEquals(unicodeString + "@example.com", validUser.getEmail());
-            assertEquals(unicodeString, validUser.getPassword());
-        }
-
-        @Test
-        @DisplayName("Should handle whitespace-only strings")
-        void shouldHandleWhitespaceOnlyStrings() {
-            // Given
-            String whitespaceString = "   \t\n   ";
-            
-            // When
-            validUser.setUsername(whitespaceString);
-            validUser.setEmail(whitespaceString + "@example.com");
-            validUser.setPassword(whitespaceString);
-            
-            // Then
-            assertEquals(whitespaceString, validUser.getUsername());
-            assertEquals(whitespaceString + "@example.com", validUser.getEmail());
-            assertEquals(whitespaceString, validUser.getPassword());
-        }
-
-        @Test
-        @DisplayName("Should handle boundary values for validation")
-        void shouldHandleBoundaryValuesForValidation() {
-            // Test minimum valid username length
-            validUser.setUsername("abc"); // Exactly 3 characters
-            assertTrue(validUser.isValidUsername());
-            
-            validUser.setUsername("ab"); // Exactly 2 characters (invalid)
-            assertFalse(validUser.isValidUsername());
-            
-            // Test minimum valid password length
-            validUser.setPassword("123456"); // Exactly 6 characters
-            assertTrue(validUser.isValidPassword());
-            
-            validUser.setPassword("12345"); // Exactly 5 characters (invalid)
-            assertFalse(validUser.isValidPassword());
-        }
+      // Then
+      assertEquals(longString, validUser.getUsername());
+      assertEquals(longString + EMAIL_DOMAIN, validUser.getEmail());
+      assertEquals(longString, validUser.getPassword());
     }
+
+    @Test
+    @DisplayName("Should handle special characters in strings")
+    void shouldHandleSpecialCharactersInStrings() {
+      // When
+      validUser.setUsername(SPECIAL_CHARS);
+      validUser.setEmail(SPECIAL_CHARS + EMAIL_DOMAIN);
+      validUser.setPassword(SPECIAL_CHARS);
+
+      // Then
+      assertEquals(SPECIAL_CHARS, validUser.getUsername());
+      assertEquals(SPECIAL_CHARS + EMAIL_DOMAIN, validUser.getEmail());
+      assertEquals(SPECIAL_CHARS, validUser.getPassword());
+    }
+
+    @Test
+    @DisplayName("Should handle unicode characters")
+    void shouldHandleUnicodeCharacters() {
+      // When
+      validUser.setUsername(UNICODE_STRING);
+      validUser.setEmail(UNICODE_STRING + EMAIL_DOMAIN);
+      validUser.setPassword(UNICODE_STRING);
+
+      // Then
+      assertEquals(UNICODE_STRING, validUser.getUsername());
+      assertEquals(UNICODE_STRING + EMAIL_DOMAIN, validUser.getEmail());
+      assertEquals(UNICODE_STRING, validUser.getPassword());
+    }
+
+    @Test
+    @DisplayName("Should handle whitespace-only strings")
+    void shouldHandleWhitespaceOnlyStrings() {
+      // When
+      validUser.setUsername(WHITESPACE_STRING_FULL);
+      validUser.setEmail(WHITESPACE_STRING_FULL + EMAIL_DOMAIN);
+      validUser.setPassword(WHITESPACE_STRING_FULL);
+
+      // Then
+      assertEquals(WHITESPACE_STRING_FULL, validUser.getUsername());
+      assertEquals(WHITESPACE_STRING_FULL + EMAIL_DOMAIN, validUser.getEmail());
+      assertEquals(WHITESPACE_STRING_FULL, validUser.getPassword());
+    }
+
+    @Test
+    @DisplayName("Should handle boundary values for validation")
+    void shouldHandleBoundaryValuesForValidation() {
+      // Test minimum valid username length
+      validUser.setUsername("abc"); // Exactly 3 characters
+      assertTrue(validUser.isValidUsername());
+
+      validUser.setUsername("ab"); // Exactly 2 characters (invalid)
+      assertFalse(validUser.isValidUsername());
+
+      // Test minimum valid password length
+      validUser.setPassword("123456"); // Exactly 6 characters
+      assertTrue(validUser.isValidPassword());
+
+      validUser.setPassword("12345"); // Exactly 5 characters (invalid)
+      assertFalse(validUser.isValidPassword());
+    }
+  }
 }
