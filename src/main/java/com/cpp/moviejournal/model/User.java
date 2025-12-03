@@ -4,32 +4,64 @@ import com.cpp.moviejournal.util.PasswordUtil;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+/**
+ * Represents a user in the Movie Journal application.
+ * Handles user authentication, validation, and state management.
+ */
 public class User {
+    private static final int MIN_USERNAME_LENGTH = 3;
+    private static final int MAX_USERNAME_LENGTH = 50;
+    private static final int MIN_PASSWORD_LENGTH = 6;
+    private static final String EMAIL_AT_SYMBOL = "@";
+    private static final String EMAIL_DOT_SYMBOL = ".";
+
     private int id;
     private String username;
     private String email;
-    private String password; // This will store the hashed password
+    private String password; // Stores the hashed password
     private LocalDateTime createdAt;
     private LocalDateTime lastLogin;
     private boolean isActive;
 
-    // Default constructor
+    /** Default constructor. */
     public User() {
         this.createdAt = LocalDateTime.now();
         this.isActive = true;
     }
 
-    // Constructor for new user registration
+    /**
+     * Constructor for new user registration.
+     *
+     * @param username the username
+     * @param email the email address
+     * @param password the plain text password (will be hashed)
+     */
     public User(String username, String email, String password) {
         this();
         this.username = username;
         this.email = email;
-        this.setPlainTextPassword(password); // Hash the password
+        this.setPlainTextPassword(password);
     }
 
-    // Constructor for database retrieval (password should already be hashed)
-    public User(int id, String username, String email, String password, 
-                LocalDateTime createdAt, LocalDateTime lastLogin, boolean isActive) {
+    /**
+     * Constructor for database retrieval (password should already be hashed).
+     *
+     * @param id the user ID
+     * @param username the username
+     * @param email the email address
+     * @param password the hashed password
+     * @param createdAt the creation timestamp
+     * @param lastLogin the last login timestamp
+     * @param isActive whether the user is active
+     */
+    public User(
+            int id,
+            String username,
+            String email,
+            String password,
+            LocalDateTime createdAt,
+            LocalDateTime lastLogin,
+            boolean isActive) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -69,16 +101,18 @@ public class User {
     }
 
     /**
-     * Set the password directly (for database retrieval - assumes already hashed)
-     * @param password The hashed password
+     * Sets the password directly (for database retrieval - assumes already hashed).
+     *
+     * @param password the hashed password
      */
     public void setPassword(String password) {
         this.password = password;
     }
-    
+
     /**
-     * Set a plain text password and hash it automatically
-     * @param plainTextPassword The plain text password to hash and store
+     * Sets a plain text password and hashes it automatically.
+     *
+     * @param plainTextPassword the plain text password to hash and store
      * @throws IllegalArgumentException if password is null or empty
      */
     public void setPlainTextPassword(String plainTextPassword) {
@@ -87,10 +121,11 @@ public class User {
         }
         this.password = PasswordUtil.hashPassword(plainTextPassword);
     }
-    
+
     /**
-     * Verify a plain text password against the stored hashed password
-     * @param plainTextPassword The plain text password to verify
+     * Verifies a plain text password against the stored hashed password.
+     *
+     * @param plainTextPassword the plain text password to verify
      * @return true if the password matches, false otherwise
      */
     public boolean verifyPassword(String plainTextPassword) {
@@ -99,9 +134,10 @@ public class User {
         }
         return PasswordUtil.verifyPassword(plainTextPassword, this.password);
     }
-    
+
     /**
-     * Check if the stored password is already hashed
+     * Checks if the stored password is already hashed.
+     *
      * @return true if the password appears to be hashed, false otherwise
      */
     public boolean isPasswordHashed() {
@@ -133,33 +169,78 @@ public class User {
     }
 
     // Business logic methods
+    /** Updates the last login timestamp to the current time. */
     public void updateLastLogin() {
         this.lastLogin = LocalDateTime.now();
     }
 
+    /** Deactivates the user account. */
     public void deactivate() {
         this.isActive = false;
     }
 
+    /** Activates the user account. */
     public void activate() {
         this.isActive = true;
     }
 
     // Validation methods
+    /**
+     * Validates the username.
+     *
+     * @return true if username is valid, false otherwise
+     */
     public boolean isValidUsername() {
-        return username != null && username.trim().length() >= 3 && username.trim().length() <= 50;
+        if (username == null) {
+            return false;
+        }
+        String trimmed = username.trim();
+        int length = trimmed.length();
+        return length >= MIN_USERNAME_LENGTH && length <= MAX_USERNAME_LENGTH;
     }
 
+    /**
+     * Validates the email address.
+     *
+     * @return true if email is valid, false otherwise
+     */
     public boolean isValidEmail() {
-        return email != null && email.contains("@") && email.contains(".") && 
-               !email.startsWith("@") && !email.endsWith("@") &&
-               email.indexOf("@") < email.lastIndexOf(".");
+        if (email == null) {
+            return false;
+        }
+        return hasAtSymbol() && hasDotSymbol() && hasValidAtPosition() && hasValidDotPosition();
     }
 
+    private boolean hasAtSymbol() {
+        return email.contains(EMAIL_AT_SYMBOL);
+    }
+
+    private boolean hasDotSymbol() {
+        return email.contains(EMAIL_DOT_SYMBOL);
+    }
+
+    private boolean hasValidAtPosition() {
+        return !email.startsWith(EMAIL_AT_SYMBOL) && !email.endsWith(EMAIL_AT_SYMBOL);
+    }
+
+    private boolean hasValidDotPosition() {
+        return email.indexOf(EMAIL_AT_SYMBOL) < email.lastIndexOf(EMAIL_DOT_SYMBOL);
+    }
+
+    /**
+     * Validates the password.
+     *
+     * @return true if password is valid, false otherwise
+     */
     public boolean isValidPassword() {
-        return password != null && password.length() >= 6;
+        return password != null && password.length() >= MIN_PASSWORD_LENGTH;
     }
 
+    /**
+     * Validates all user fields.
+     *
+     * @return true if all fields are valid, false otherwise
+     */
     public boolean isValidUser() {
         return isValidUsername() && isValidEmail() && isValidPassword();
     }
@@ -167,22 +248,30 @@ public class User {
     // Override methods
     @Override
     public String toString() {
-        return "User{" +
-                "id=" + id +
-                ", username='" + username + '\'' +
-                ", email='" + email + '\'' +
-                ", isActive=" + isActive +
-                '}';
+        return "User{"
+                + "id="
+                + id
+                + ", username='"
+                + username
+                + '\''
+                + ", email='"
+                + email
+                + '\''
+                + ", isActive="
+                + isActive
+                + '}';
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
         User user = (User) obj;
-        return Objects.equals(username, user.username) && 
-               Objects.equals(email, user.email);
+        return Objects.equals(username, user.username) && Objects.equals(email, user.email);
     }
 
     @Override
@@ -191,6 +280,7 @@ public class User {
     }
 
     // Builder Pattern for User
+    /** Builder class for constructing User objects. */
     public static class Builder {
         private int id;
         private String username;
@@ -248,12 +338,24 @@ public class User {
             return this;
         }
 
+        /**
+         * Builds a User object from the builder.
+         *
+         * @return the constructed User object
+         */
         public User build() {
             User user = new User();
             user.setId(id);
             user.setUsername(username);
             user.setEmail(email);
-            
+            setPasswordOnUser(user);
+            user.setCreatedAt(createdAt);
+            user.setLastLogin(lastLogin);
+            user.setActive(isActive);
+            return user;
+        }
+
+        private void setPasswordOnUser(User user) {
             if (password != null) {
                 if (passwordIsPlaintext) {
                     user.setPlainTextPassword(password);
@@ -261,18 +363,13 @@ public class User {
                     user.setPassword(password);
                 }
             }
-            
-            user.setCreatedAt(createdAt);
-            user.setLastLogin(lastLogin);
-            user.setActive(isActive);
-            
-            return user;
         }
     }
 
     /**
-     * Creates a new Builder instance for constructing User objects
-     * @return A new Builder instance
+     * Creates a new Builder instance for constructing User objects.
+     *
+     * @return a new Builder instance
      */
     public static Builder builder() {
         return new Builder();
